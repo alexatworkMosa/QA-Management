@@ -27,7 +27,7 @@
 <body class="bg-gray-50 text-gray-800 p-6 md:p-12 min-h-screen">
 
     <div class="max-w-5xl mx-auto">
-        <!-- Header (Kept in English, LTR direction) -->
+        <!-- Header -->
         <header class="mb-8 flex items-center justify-between" dir="ltr">
             <div class="text-left">
                 <h1 class="text-3xl font-semibold text-gray-900 flex items-center gap-2">
@@ -36,12 +36,17 @@
                 </h1>
                 <p class="text-gray-500 mt-1">Manage and track your active quality assurance projects.</p>
             </div>
+            <!-- סטטוס חיבור לענן -->
+            <div id="cloudStatus" class="flex items-center gap-2 text-sm text-gray-500 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+                <i class="ph ph-cloud-arrow-down text-lg"></i>
+                <span>מתחבר לענן...</span>
+            </div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Right Column in RTL (Form) -->
             <div class="lg:col-span-1">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 sticky top-6">
                     <form id="projectForm" class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">שם הפרויקט</label>
@@ -68,7 +73,7 @@
                                 <option value="Completed">הושלם</option>
                             </select>
                         </div>
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 mt-2">
+                        <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 mt-2 disabled:bg-blue-300">
                             <i class="ph ph-plus-circle text-lg"></i> הוסף פרויקט
                         </button>
                     </form>
@@ -96,16 +101,22 @@
                         </div>
                     </div>
                     
+                    <!-- Loading State -->
+                    <div id="loadingState" class="flex flex-col items-center justify-center py-12 text-gray-400">
+                        <i class="ph ph-spinner-gap animate-spin text-5xl mb-3 text-blue-500"></i>
+                        <p>מושך נתונים מגוגל...</p>
+                    </div>
+
                     <!-- Projects Grid -->
-                    <div id="projectsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div id="projectsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
                         <!-- Project Cards will be injected here by JS -->
                     </div>
 
-                    <!-- Empty State (Hidden by default) -->
+                    <!-- Empty State -->
                     <div id="emptyState" class="hidden flex-col items-center justify-center py-12 text-gray-400">
                         <i class="ph ph-folder-dashed text-6xl mb-3 text-gray-300"></i>
                         <p>לא נמצאו פרויקטים להצגה.</p>
-                        <p class="text-sm">שנה את הסינון או הוסף פרויקט חדש.</p>
+                        <p class="text-sm">צור פרויקט חדש כדי להתחיל.</p>
                     </div>
                 </div>
             </div>
@@ -114,15 +125,11 @@
 
     <!-- Application Logic -->
     <script>
-        // Initial dummy data - Updated statuses to show the new colors
-        let projects = [
-            { id: 1, name: "עיצוב מחדש של תהליך תשלום", assignee: "שיר כהן", devManager: "אלכס רוזן", date: "2026-05-20", status: "In Progress" },
-            { id: 2, name: "מיגרציית API הרשאות", assignee: "דן לוי", devManager: "מיכל אהרון", date: "2026-05-15", status: "Blocked" },
-            { id: 3, name: "השקת אזור אישי למשתמשים", assignee: "יעל אברהם", devManager: "רון כהן", date: "2026-06-01", status: "Pending" },
-            { id: 4, name: "תיקון באג שרת", assignee: "אבי כהן", devManager: "דנה כץ", date: "2026-05-10", status: "Completed" }
-        ];
+        // 🛑 === הדבק כאן את כתובת ה-WEB APP מגוגל === 🛑
+        const GOOGLE_APP_URL = "https://script.google.com/macros/s/AKfycbxbA0Aof41TSnvdNFIZ8BKuRPtfDsZLh_AJAPcrg8t7cZfwr3G7xbXL84H3JhA4hI4FRg/exec"; 
 
-        // Status translations for display
+        let projects = [];
+
         const statusTranslations = {
             'Pending': 'ממתין להקמה',
             'In Progress': 'בבדיקה',
@@ -133,36 +140,69 @@
         const projectForm = document.getElementById('projectForm');
         const projectsContainer = document.getElementById('projectsContainer');
         const emptyState = document.getElementById('emptyState');
+        const loadingState = document.getElementById('loadingState');
         const statusFilter = document.getElementById('statusFilter');
+        const cloudStatus = document.getElementById('cloudStatus');
+        const submitBtn = document.getElementById('submitBtn');
 
-        // Listen for changes in the filter dropdown
         statusFilter.addEventListener('change', renderProjects);
 
-        // Helper function to get color classes based on status - UPDATED COLORS
+        function updateCloudStatus(state) {
+            if(state === 'syncing') {
+                cloudStatus.innerHTML = '<i class="ph ph-arrows-clockwise animate-spin text-lg text-blue-500"></i><span class="text-blue-500">מסנכרן מול גוגל...</span>';
+            } else if(state === 'synced') {
+                cloudStatus.innerHTML = '<i class="ph ph-cloud-check text-lg text-green-500"></i><span class="text-green-500">מסונכרן לענן</span>';
+                setTimeout(() => {
+                    cloudStatus.innerHTML = '<i class="ph ph-cloud text-lg"></i><span>מחובר לגוגל</span>';
+                }, 3000);
+            } else if(state === 'error') {
+                cloudStatus.innerHTML = '<i class="ph ph-warning-circle text-lg text-red-500"></i><span class="text-red-500">שגיאת חיבור</span>';
+            }
+        }
+
+        // טעינת פרויקטים מגוגל שיטס
+        async function fetchProjects() {
+            if(GOOGLE_APP_URL === "הדבק_כאן_את_הכתובת_שלך") {
+                alert("שגיאה: לא הגדרת את כתובת ה-Google App בקוד!");
+                return;
+            }
+
+            try {
+                const response = await fetch(GOOGLE_APP_URL);
+                const data = await response.json();
+                
+                // ממיינים את הפרויקטים כך שהחדשים יופיעו למעלה
+                projects = data.reverse(); 
+                
+                loadingState.classList.add('hidden');
+                projectsContainer.classList.remove('hidden');
+                updateCloudStatus('synced');
+                renderProjects();
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                loadingState.innerHTML = '<p class="text-red-500">אירעה שגיאה בטעינת הנתונים.</p>';
+                updateCloudStatus('error');
+            }
+        }
+
         function getStatusColor(status) {
             switch(status) {
-                case 'Pending': return 'bg-blue-100 text-blue-800 border-blue-200'; // כחול בהיר
-                case 'In Progress': return 'bg-yellow-100 text-yellow-800 border-yellow-200'; // צהוב
-                case 'Blocked': return 'bg-red-100 text-red-800 border-red-200'; // אדום
-                case 'Completed': return 'bg-green-100 text-green-800 border-green-200'; // ירוק
+                case 'Pending': return 'bg-blue-100 text-blue-800 border-blue-200';
+                case 'In Progress': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                case 'Blocked': return 'bg-red-100 text-red-800 border-red-200';
+                case 'Completed': return 'bg-green-100 text-green-800 border-green-200';
                 default: return 'bg-gray-100 text-gray-800 border-gray-200';
             }
         }
 
-        // Render projects to the DOM
         function renderProjects() {
-            projectsContainer.innerHTML = ''; // Clear current
-            
-            // Get current filter value
+            projectsContainer.innerHTML = ''; 
             const currentFilter = statusFilter.value;
-
-            // Filter the projects array
             const filteredProjects = projects.filter(project => {
                 if (currentFilter === 'All') return true;
                 return project.status === currentFilter;
             });
 
-            // Handle Empty State
             if (filteredProjects.length === 0) {
                 emptyState.classList.remove('hidden');
                 emptyState.classList.add('flex');
@@ -170,14 +210,15 @@
                 emptyState.classList.add('hidden');
                 emptyState.classList.remove('flex');
 
-                // Render filtered cards
                 filteredProjects.forEach(project => {
                     const statusColors = getStatusColor(project.status);
                     const displayStatus = statusTranslations[project.status];
                     
-                    // Format date nicely for Hebrew locale
-                    const dateObj = new Date(project.date);
-                    const formattedDate = dateObj.toLocaleDateString('he-IL', { month: 'long', day: 'numeric', year: 'numeric' });
+                    let formattedDate = project.date;
+                    try {
+                        const dateObj = new Date(project.date);
+                        formattedDate = dateObj.toLocaleDateString('he-IL', { month: 'short', day: 'numeric', year: 'numeric' });
+                    } catch(e) {}
 
                     const card = document.createElement('div');
                     card.className = "border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative bg-white";
@@ -185,7 +226,7 @@
                     card.innerHTML = `
                         <div class="flex justify-between items-start mb-2">
                             <h3 class="font-semibold text-gray-800 truncate pl-6" title="${project.name}">${project.name}</h3>
-                            <button onclick="deleteProject(${project.id})" class="text-gray-400 hover:text-red-500 absolute top-4 left-4 transition-colors">
+                            <button onclick="deleteProject('${project.id}')" class="text-gray-400 hover:text-red-500 absolute top-4 left-4 transition-colors">
                                 <i class="ph ph-trash"></i>
                             </button>
                         </div>
@@ -212,12 +253,12 @@
             }
         }
 
-        // Add a new project
-        projectForm.addEventListener('submit', function(e) {
+        // הוספת פרויקט וסנכרון מול גוגל
+        projectForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const newProject = {
-                id: Date.now(), // simple unique ID
+                id: Date.now().toString(),
                 name: document.getElementById('projName').value,
                 assignee: document.getElementById('projAssignee').value,
                 devManager: document.getElementById('projDevManager').value,
@@ -225,26 +266,60 @@
                 status: document.getElementById('projStatus').value
             };
 
-            projects.unshift(newProject); // Add to beginning of array
-            
-            // If the user adds a project that doesn't match the current filter, 
-            // let's reset the filter to "All" so they can see what they just added.
+            // עדכון חזותי מיידי במסך
+            projects.unshift(newProject);
             if(statusFilter.value !== 'All' && statusFilter.value !== newProject.status) {
                 statusFilter.value = 'All';
             }
-
             renderProjects();
-            projectForm.reset(); // Clear form inputs
+            projectForm.reset();
+
+            // שליחה לגוגל שיטס ברקע
+            updateCloudStatus('syncing');
+            submitBtn.disabled = true;
+            
+            try {
+                // שימוש ב- text/plain מונע שגיאות CORS מול גוגל
+                await fetch(GOOGLE_APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'add', project: newProject })
+                });
+                updateCloudStatus('synced');
+            } catch (error) {
+                console.error("Failed to save to Google Sheets:", error);
+                updateCloudStatus('error');
+            } finally {
+                submitBtn.disabled = false;
+            }
         });
 
-        // Delete a project
-        function deleteProject(id) {
-            projects = projects.filter(p => p.id !== id);
+        // מחיקת פרויקט וסנכרון מול גוגל
+        async function deleteProject(id) {
+            if(!confirm('האם אתה בטוח שברצונך למחוק פרויקט זה?')) return;
+
+            // מחיקה מיידית מהמסך
+            projects = projects.filter(p => String(p.id) !== String(id));
             renderProjects();
+
+            // מחיקה מגוגל שיטס ברקע
+            updateCloudStatus('syncing');
+            try {
+                await fetch(GOOGLE_APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'delete', id: id })
+                });
+                updateCloudStatus('synced');
+            } catch (error) {
+                console.error("Failed to delete from Google Sheets:", error);
+                updateCloudStatus('error');
+            }
         }
 
-        // Initial render
-        renderProjects();
+        // התנעה - טעינת נתונים מגוגל בהעלאת הדף
+        fetchProjects();
+
     </script>
 </body>
 </html>
