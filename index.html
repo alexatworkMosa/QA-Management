@@ -4,19 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מנהל פרויקטי QA</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script>
         tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'Rubik', 'sans-serif'],
-                    }
-                }
-            }
+            theme: { extend: { fontFamily: { sans: ['Inter', 'Rubik', 'sans-serif'], } } }
         }
     </script>
     <style>
@@ -27,26 +19,23 @@
 <body class="bg-gray-50 text-gray-800 p-6 md:p-12 min-h-screen">
 
     <div class="max-w-5xl mx-auto">
-        <!-- Header -->
         <header class="mb-8 flex items-center justify-between" dir="ltr">
             <div class="text-left">
                 <h1 class="text-3xl font-semibold text-gray-900 flex items-center gap-2">
-                    <i class="ph ph-check-square-offset text-blue-600"></i>
-                    QA Workspace
+                    <i class="ph ph-check-square-offset text-blue-600"></i> QA Workspace
                 </h1>
                 <p class="text-gray-500 mt-1">Manage and track your active quality assurance projects.</p>
             </div>
-            <!-- סטטוס חיבור לענן -->
             <div id="cloudStatus" class="flex items-center gap-2 text-sm text-gray-500 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                <i class="ph ph-cloud-arrow-down text-lg"></i>
-                <span>מתחבר לענן...</span>
+                <i class="ph ph-cloud-arrow-down text-lg"></i> <span>מתחבר לענן...</span>
             </div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Right Column in RTL (Form) -->
+            <!-- Form Area -->
             <div class="lg:col-span-1">
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 sticky top-6">
+                    <h2 id="formTitle" class="text-lg font-medium mb-4 border-b border-gray-200 pb-2 hidden">עריכת פרויקט</h2>
                     <form id="projectForm" class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">שם הפרויקט</label>
@@ -60,10 +49,19 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">מנהל פיתוח</label>
                             <input type="text" id="projDevManager" required placeholder="לדוגמה: רון כהן" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">תאריך יעד</label>
-                            <input type="date" id="projDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right">
+                        
+                        <!-- Dates Row -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">תאריך התחלה</label>
+                                <input type="date" id="projStartDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">תאריך יעד</label>
+                                <input type="date" id="projDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right text-sm">
+                            </div>
                         </div>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">סטטוס</label>
                             <select id="projStatus" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -73,22 +71,23 @@
                                 <option value="Completed">הושלם</option>
                             </select>
                         </div>
-                        <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 mt-2 disabled:bg-blue-300">
-                            <i class="ph ph-plus-circle text-lg"></i> הוסף פרויקט
-                        </button>
+                        <div class="flex gap-2 mt-2">
+                            <button type="submit" id="submitBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 disabled:bg-blue-300">
+                                <i class="ph ph-plus-circle text-lg" id="submitIcon"></i> <span id="submitText">הוסף פרויקט</span>
+                            </button>
+                            <button type="button" id="cancelEditBtn" onclick="cancelEdit()" class="hidden bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors duration-200">
+                                ביטול
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
 
-            <!-- Left Column in RTL (Projects Display) -->
+            <!-- Projects Display -->
             <div class="lg:col-span-2">
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[400px]">
-                    
-                    <!-- Header with Filter -->
                     <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
                         <h2 class="text-lg font-medium">פרויקטים פעילים</h2>
-                        
-                        <!-- Status Filter Dropdown -->
                         <div class="flex items-center gap-2">
                             <i class="ph ph-funnel text-gray-400"></i>
                             <select id="statusFilter" class="text-sm bg-gray-50 border border-gray-300 text-gray-700 rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-1.5 cursor-pointer">
@@ -101,18 +100,13 @@
                         </div>
                     </div>
                     
-                    <!-- Loading State -->
                     <div id="loadingState" class="flex flex-col items-center justify-center py-12 text-gray-400">
                         <i class="ph ph-spinner-gap animate-spin text-5xl mb-3 text-blue-500"></i>
                         <p>מושך נתונים מגוגל...</p>
                     </div>
 
-                    <!-- Projects Grid -->
-                    <div id="projectsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-                        <!-- Project Cards will be injected here by JS -->
-                    </div>
+                    <div id="projectsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden"></div>
 
-                    <!-- Empty State -->
                     <div id="emptyState" class="hidden flex-col items-center justify-center py-12 text-gray-400">
                         <i class="ph ph-folder-dashed text-6xl mb-3 text-gray-300"></i>
                         <p>לא נמצאו פרויקטים להצגה.</p>
@@ -126,9 +120,10 @@
     <!-- Application Logic -->
     <script>
         // 🛑 === הדבק כאן את כתובת ה-WEB APP מגוגל === 🛑
-        const GOOGLE_APP_URL = "https://script.google.com/macros/s/AKfycbxSYbo-RfwgY6oMDO-rrprn7NNVh34L1J774FbI4ucJIPOt0aFQct5bd4NuF7mJ_tSKrA/exec"; 
+        const GOOGLE_APP_URL = "הדבק_כאן_את_הכתובת_שלך"; 
 
         let projects = [];
+        let editingProjectId = null;
 
         const statusTranslations = {
             'Pending': 'ממתין להקמה',
@@ -144,6 +139,10 @@
         const statusFilter = document.getElementById('statusFilter');
         const cloudStatus = document.getElementById('cloudStatus');
         const submitBtn = document.getElementById('submitBtn');
+        const submitIcon = document.getElementById('submitIcon');
+        const submitText = document.getElementById('submitText');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        const formTitle = document.getElementById('formTitle');
 
         statusFilter.addEventListener('change', renderProjects);
 
@@ -152,34 +151,23 @@
                 cloudStatus.innerHTML = '<i class="ph ph-arrows-clockwise animate-spin text-lg text-blue-500"></i><span class="text-blue-500">מסנכרן מול גוגל...</span>';
             } else if(state === 'synced') {
                 cloudStatus.innerHTML = '<i class="ph ph-cloud-check text-lg text-green-500"></i><span class="text-green-500">מסונכרן לענן</span>';
-                setTimeout(() => {
-                    cloudStatus.innerHTML = '<i class="ph ph-cloud text-lg"></i><span>מחובר לגוגל</span>';
-                }, 3000);
+                setTimeout(() => { cloudStatus.innerHTML = '<i class="ph ph-cloud text-lg"></i><span>מחובר לגוגל</span>'; }, 3000);
             } else if(state === 'error') {
                 cloudStatus.innerHTML = '<i class="ph ph-warning-circle text-lg text-red-500"></i><span class="text-red-500">שגיאת חיבור</span>';
             }
         }
 
-        // טעינת פרויקטים מגוגל שיטס
         async function fetchProjects() {
-            if(GOOGLE_APP_URL === "הדבק_כאן_את_הכתובת_שלך") {
-                alert("שגיאה: לא הגדרת את כתובת ה-Google App בקוד!");
-                return;
-            }
-
+            if(GOOGLE_APP_URL === "הדבק_כאן_את_הכתובת_שלך") return alert("שגיאה: לא הגדרת את כתובת ה-Google App בקוד!");
             try {
                 const response = await fetch(GOOGLE_APP_URL);
                 const data = await response.json();
-                
-                // ממיינים את הפרויקטים כך שהחדשים יופיעו למעלה
                 projects = data.reverse(); 
-                
                 loadingState.classList.add('hidden');
                 projectsContainer.classList.remove('hidden');
                 updateCloudStatus('synced');
                 renderProjects();
             } catch (error) {
-                console.error("Error fetching data:", error);
                 loadingState.innerHTML = '<p class="text-red-500">אירעה שגיאה בטעינת הנתונים.</p>';
                 updateCloudStatus('error');
             }
@@ -198,10 +186,7 @@
         function renderProjects() {
             projectsContainer.innerHTML = ''; 
             const currentFilter = statusFilter.value;
-            const filteredProjects = projects.filter(project => {
-                if (currentFilter === 'All') return true;
-                return project.status === currentFilter;
-            });
+            const filteredProjects = projects.filter(project => currentFilter === 'All' ? true : project.status === currentFilter);
 
             if (filteredProjects.length === 0) {
                 emptyState.classList.remove('hidden');
@@ -214,37 +199,40 @@
                     const statusColors = getStatusColor(project.status);
                     const displayStatus = statusTranslations[project.status];
                     
+                    let formattedStartDate = project.startDate;
                     let formattedDate = project.date;
-                    try {
-                        const dateObj = new Date(project.date);
-                        formattedDate = dateObj.toLocaleDateString('he-IL', { month: 'short', day: 'numeric', year: 'numeric' });
+                    try { 
+                        if(project.startDate) formattedStartDate = new Date(project.startDate).toLocaleDateString('he-IL', { month: 'short', day: 'numeric', year: 'numeric' });
+                        if(project.date) formattedDate = new Date(project.date).toLocaleDateString('he-IL', { month: 'short', day: 'numeric', year: 'numeric' }); 
                     } catch(e) {}
 
+                    const isEditing = editingProjectId === String(project.id);
+                    const cardBorder = isEditing ? 'border-blue-400 shadow-md ring-1 ring-blue-400' : 'border-gray-200 hover:shadow-md';
+
                     const card = document.createElement('div');
-                    card.className = "border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative bg-white";
+                    card.className = `border rounded-lg p-4 transition-all relative bg-white ${cardBorder}`;
                     
                     card.innerHTML = `
                         <div class="flex justify-between items-start mb-2">
-                            <h3 class="font-semibold text-gray-800 truncate pl-6" title="${project.name}">${project.name}</h3>
-                            <button onclick="deleteProject('${project.id}')" class="text-gray-400 hover:text-red-500 absolute top-4 left-4 transition-colors">
-                                <i class="ph ph-trash"></i>
-                            </button>
+                            <h3 class="font-semibold text-gray-800 truncate pl-14" title="${project.name}">${project.name}</h3>
+                            <div class="absolute top-4 left-4 flex gap-2">
+                                <button onclick="editProject('${project.id}')" class="text-gray-400 hover:text-blue-500 transition-colors" title="ערוך">
+                                    <i class="ph ph-pencil-simple text-lg"></i>
+                                </button>
+                                <button onclick="deleteProject('${project.id}')" class="text-gray-400 hover:text-red-500 transition-colors" title="מחק">
+                                    <i class="ph ph-trash text-lg"></i>
+                                </button>
+                            </div>
                         </div>
-                        <span class="inline-block px-2.5 py-1 text-xs font-medium border rounded-full mb-4 ${statusColors}">
-                            ${displayStatus}
-                        </span>
+                        <span class="inline-block px-2.5 py-1 text-xs font-medium border rounded-full mb-4 ${statusColors}">${displayStatus}</span>
                         <div class="space-y-2 text-sm text-gray-600">
-                            <div class="flex items-center gap-2">
-                                <i class="ph ph-shield-check text-gray-400"></i>
-                                <span><span class="font-medium">QA:</span> ${project.assignee}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i class="ph ph-code text-gray-400"></i>
-                                <span><span class="font-medium">פיתוח:</span> ${project.devManager}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i class="ph ph-calendar-blank text-gray-400"></i>
-                                <span><span class="font-medium">יעד:</span> ${formattedDate}</span>
+                            <div class="flex items-center gap-2"><i class="ph ph-shield-check text-gray-400"></i><span><span class="font-medium">QA:</span> ${project.assignee}</span></div>
+                            <div class="flex items-center gap-2"><i class="ph ph-code text-gray-400"></i><span><span class="font-medium">פיתוח:</span> ${project.devManager}</span></div>
+                            
+                            <!-- התאריכים החדשים מסודרים -->
+                            <div class="flex flex-col gap-1 mt-2 pt-2 border-t border-gray-100">
+                                <div class="flex items-center gap-2"><i class="ph ph-calendar-plus text-gray-400"></i><span><span class="font-medium text-gray-700">התחלה:</span> ${formattedStartDate || '-'}</span></div>
+                                <div class="flex items-center gap-2"><i class="ph ph-flag-checkered text-gray-400"></i><span><span class="font-medium text-gray-700">יעד:</span> ${formattedDate || '-'}</span></div>
                             </div>
                         </div>
                     `;
@@ -253,56 +241,93 @@
             }
         }
 
-        // הוספת פרויקט וסנכרון מול גוגל
+        function editProject(id) {
+            const project = projects.find(p => String(p.id) === String(id));
+            if(!project) return;
+
+            editingProjectId = id;
+            
+            document.getElementById('projName').value = project.name;
+            document.getElementById('projAssignee').value = project.assignee;
+            document.getElementById('projDevManager').value = project.devManager;
+            // חיתוך זמן במקרה שמגיע אובייקט Date מלא מהשרת (כדי להתאים לפורמט ה-Input)
+            document.getElementById('projStartDate').value = project.startDate ? project.startDate.split('T')[0] : '';
+            document.getElementById('projDate').value = project.date ? project.date.split('T')[0] : '';
+            document.getElementById('projStatus').value = project.status;
+
+            formTitle.classList.remove('hidden');
+            submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            submitIcon.className = "ph ph-floppy-disk text-lg";
+            submitText.innerText = "שמור שינויים";
+            cancelEditBtn.classList.remove('hidden');
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            renderProjects();
+        }
+
+        function cancelEdit() {
+            editingProjectId = null;
+            projectForm.reset();
+            
+            formTitle.classList.add('hidden');
+            submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            submitBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            submitIcon.className = "ph ph-plus-circle text-lg";
+            submitText.innerText = "הוסף פרויקט";
+            cancelEditBtn.classList.add('hidden');
+            
+            renderProjects();
+        }
+
         projectForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const newProject = {
-                id: Date.now().toString(),
+            const projectData = {
+                id: editingProjectId ? editingProjectId : Date.now().toString(),
                 name: document.getElementById('projName').value,
                 assignee: document.getElementById('projAssignee').value,
                 devManager: document.getElementById('projDevManager').value,
+                startDate: document.getElementById('projStartDate').value, // הערך החדש
                 date: document.getElementById('projDate').value,
                 status: document.getElementById('projStatus').value
             };
 
-            // עדכון חזותי מיידי במסך
-            projects.unshift(newProject);
-            if(statusFilter.value !== 'All' && statusFilter.value !== newProject.status) {
-                statusFilter.value = 'All';
-            }
-            renderProjects();
-            projectForm.reset();
+            const actionType = editingProjectId ? 'update' : 'add';
 
-            // שליחה לגוגל שיטס ברקע
+            if (editingProjectId) {
+                const index = projects.findIndex(p => String(p.id) === String(editingProjectId));
+                if(index !== -1) projects[index] = projectData;
+            } else {
+                projects.unshift(projectData);
+            }
+
+            if(statusFilter.value !== 'All' && statusFilter.value !== projectData.status) statusFilter.value = 'All';
+            cancelEdit(); 
+
             updateCloudStatus('syncing');
             submitBtn.disabled = true;
-            
             try {
-                // שימוש ב- text/plain מונע שגיאות CORS מול גוגל
                 await fetch(GOOGLE_APP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'add', project: newProject })
+                    body: JSON.stringify({ action: actionType, project: projectData })
                 });
                 updateCloudStatus('synced');
             } catch (error) {
-                console.error("Failed to save to Google Sheets:", error);
                 updateCloudStatus('error');
             } finally {
                 submitBtn.disabled = false;
             }
         });
 
-        // מחיקת פרויקט וסנכרון מול גוגל
         async function deleteProject(id) {
             if(!confirm('האם אתה בטוח שברצונך למחוק פרויקט זה?')) return;
+            if(editingProjectId === String(id)) cancelEdit();
 
-            // מחיקה מיידית מהמסך
             projects = projects.filter(p => String(p.id) !== String(id));
             renderProjects();
 
-            // מחיקה מגוגל שיטס ברקע
             updateCloudStatus('syncing');
             try {
                 await fetch(GOOGLE_APP_URL, {
@@ -312,14 +337,11 @@
                 });
                 updateCloudStatus('synced');
             } catch (error) {
-                console.error("Failed to delete from Google Sheets:", error);
                 updateCloudStatus('error');
             }
         }
 
-        // התנעה - טעינת נתונים מגוגל בהעלאת הדף
         fetchProjects();
-
     </script>
 </body>
 </html>
